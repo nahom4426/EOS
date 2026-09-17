@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Database Service: PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: eos_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eos_church
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d eos_church"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Object Storage Service: MinIO (for Avatars/Documents)
+  minio:
+    image: minio/minio:latest
+    container_name: eos_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  # Express REST API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eos_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eos_church
+      JWT_SECRET: eos_church_jwt_secret_2026_very_long_secure_key
+      JWT_EXPIRES_IN: 7d
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Frontend Nginx Web Server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eos_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local

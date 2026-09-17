@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+backend/node_modules
+frontend/node_modules
+frontend/dist
+backend/public/uploads/*
+!backend/public/uploads/.gitkeep
+*.log
+.env
+.env.*
+*.mp3
+*.vm.au
+.vscode
+.idea
