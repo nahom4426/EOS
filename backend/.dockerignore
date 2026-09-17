@@ -1,8 +1,9 @@
-node_modules
+node_modules/
 npm-debug.log
 .env
 .env.*
-public/uploads/*
-!public/uploads/.gitkeep
-.vscode
-.idea
+!.env.example
+.git
+.gitignore
+.DS_Store
+*.log

@@ -7,8 +7,8 @@ const { authenticate, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Ensure audio uploads folder exists in frontend public directory
-const audioDir = path.join(__dirname, '../../../frontend/public/uploads/audio');
+// Ensure audio uploads folder exists in backend public uploads directory
+const audioDir = path.join(__dirname, '../../public/uploads/audio');
 if (!fs.existsSync(audioDir)) {
   fs.mkdirSync(audioDir, { recursive: true });
 }
