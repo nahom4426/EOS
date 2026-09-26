@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-const defaultBaseUrl = import.meta.env.DEV ? 'http://localhost:5000' : ''
+const defaultBaseUrl = 'http://207.180.201.199:8080'
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL !== undefined ? import.meta.env.VITE_API_BASE_URL : defaultBaseUrl,
+  baseURL: import.meta.env.VITE_API_BASE_URL || defaultBaseUrl,
   headers: { 'Content-Type': 'application/json' },
 })
 
