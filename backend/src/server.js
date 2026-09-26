@@ -9,7 +9,7 @@ async function start() {
     await pool.query('SELECT 1');
     console.log('✅ PostgreSQL connected');
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 EOS Church API running on http://localhost:${PORT}`);
       console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
     });

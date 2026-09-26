@@ -8,8 +8,8 @@ const { uploadAvatar } = require('../services/minio');
 
 const router = express.Router();
 
-// ── Audio upload setup (unchanged) ───────────────────────────────────────────
-const audioDir = path.join(__dirname, '../../../frontend/public/uploads/audio');
+// Ensure audio uploads folder exists in backend public uploads directory
+const audioDir = path.join(__dirname, '../../public/uploads/audio');
 if (!fs.existsSync(audioDir)) {
   fs.mkdirSync(audioDir, { recursive: true });
 }

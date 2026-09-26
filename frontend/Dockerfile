@@ -1,23 +1,28 @@
-# Stage 1: Build Vue 3 + Vite Application
-FROM node:20-alpine AS build-stage
+# ==========================================
+# EOS Frontend - Node / Vite Production Container
+# ==========================================
+FROM node:20-alpine
 
 WORKDIR /app
 
+# Copy dependency files
 COPY package*.json ./
+
+# Clean install dependencies
 RUN npm ci
 
+# Copy application source code
 COPY . .
+
+# Optional build argument for API base URL
+ARG VITE_API_BASE_URL=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# Build production assets
 RUN npm run build
 
-# Stage 2: Serve with Production Nginx Web Server
-FROM nginx:alpine AS production-stage
+# Expose Vite preview port
+EXPOSE 5173
 
-# Copy compiled static assets from build stage
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-
-# Copy custom Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# Serve production build on port 5173
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "5173"]

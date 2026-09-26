@@ -1,18 +1,15 @@
 -- Ethiopian Orthodox Church Contribution Management System
 -- PostgreSQL Schema
 
--- Enable UUID extension (optional, using SERIAL for simplicity)
--- DROP existing types/tables if re-running
-DROP TABLE IF EXISTS contributions CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS branches CASCADE;
-DROP TYPE IF EXISTS user_role CASCADE;
-
--- Enum for user roles
-CREATE TYPE user_role AS ENUM ('superadmin', 'branch_admin', 'member');
+-- Enum for user roles (safe creation)
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('superadmin', 'branch_admin', 'member');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Branches table
-CREATE TABLE branches (
+CREATE TABLE IF NOT EXISTS branches (
   id        SERIAL PRIMARY KEY,
   name      VARCHAR(255) NOT NULL,
   location  VARCHAR(255),
@@ -20,7 +17,7 @@ CREATE TABLE branches (
 );
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id            SERIAL PRIMARY KEY,
   phone         VARCHAR(20) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
@@ -32,9 +29,8 @@ CREATE TABLE users (
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
-
 -- Contributions table
-CREATE TABLE contributions (
+CREATE TABLE IF NOT EXISTS contributions (
   id            SERIAL PRIMARY KEY,
   member_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   branch_id     INTEGER NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
@@ -63,14 +59,22 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- System Settings table
+CREATE TABLE IF NOT EXISTS system_settings (
+  key         VARCHAR(100) PRIMARY KEY,
+  value       TEXT NOT NULL,
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for common queries
-CREATE INDEX idx_contributions_member_id ON contributions(member_id);
-CREATE INDEX idx_contributions_branch_id ON contributions(branch_id);
-CREATE INDEX idx_contributions_month_covered ON contributions(month_covered);
-CREATE INDEX idx_contributions_category ON contributions(category);
-CREATE INDEX idx_users_branch_id ON users(branch_id);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_contributions_member_id ON contributions(member_id);
+CREATE INDEX IF NOT EXISTS idx_contributions_branch_id ON contributions(branch_id);
+CREATE INDEX IF NOT EXISTS idx_contributions_month_covered ON contributions(month_covered);
+CREATE INDEX IF NOT EXISTS idx_contributions_category ON contributions(category);
+CREATE INDEX IF NOT EXISTS idx_users_branch_id ON users(branch_id);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+
 
