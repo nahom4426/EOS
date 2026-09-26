@@ -1,5 +1,6 @@
-const defaultBaseUrl = 'http://207.180.201.199:8080';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || defaultBaseUrl;
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://207.180.201.199:8080';
+const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
+const API_BASE_URL = (isHttpsPage && rawBaseUrl.startsWith('http://')) ? '' : rawBaseUrl;
 
 /**
  * Returns absolute avatar URL for display in img tags

@@ -1,8 +1,12 @@
 import axios from 'axios'
 
-const defaultBaseUrl = 'http://207.180.201.199:8080'
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://207.180.201.199:8080'
+// If running on an HTTPS page (e.g. Vercel) and target is unencrypted http:// IP, use relative path to route through Vercel reverse proxy rewrites
+const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:'
+const baseURL = (isHttpsPage && rawBaseUrl.startsWith('http://')) ? '' : rawBaseUrl
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || defaultBaseUrl,
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
 })
 
