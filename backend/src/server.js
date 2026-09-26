@@ -1,13 +1,14 @@
 const app = require('./app');
-const pool = require('./db/pool');
+const { runAutoMigrations } = require('./db/autoMigrate');
 
 const PORT = process.env.PORT || 5000;
 
 async function start() {
   try {
-    // Test DB connection
+    // Test DB connection & auto-migrate schema
     await pool.query('SELECT 1');
     console.log('✅ PostgreSQL connected');
+    await runAutoMigrations();
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 EOS Church API running on http://localhost:${PORT}`);
