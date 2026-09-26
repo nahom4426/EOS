@@ -216,45 +216,8 @@ function fillDemo(p, pw) {
   error.value = ''
 }
 
-/* ── Classical Audio Engine (Supports MP3 & Begena Synthesizer) ──── */
-let audioElem = null
-let audioCtx = null
-let musicTimer = null
-let masterGain = null
+/* ── Audio: delegated to audio store (handles MP3 playback) ──── */
 let hasUserInteracted = false
-const audioSetting = ref({ track: 'custom_audio', custom_url: '/assets/audio/orthodox_classical.mp3' })
-
-const begenaScale = [146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00]
-
-async function loadClassicalSetting() {
-  try {
-    const res = await api.get('/api/settings/login-classical')
-    audioSetting.value = res.data
-  } catch (e) {
-    console.warn('Using default classical audio:', e)
-  }
-}
-
-function startAudioPlayback() {
-  if (!isMusicPlaying.value) return
-
-  if (audioSetting.value.track === 'custom_audio' || audioSetting.value.custom_url) {
-    // Play MP3 audio (e.g. የፍቅር እናት የሰላም Classical Orthodox Mezmur)
-    if (!audioElem) {
-      audioElem = new Audio(audioSetting.value.custom_url || '/assets/audio/orthodox_classical.mp3')
-      audioElem.loop = true
-      audioElem.volume = 0.5
-    }
-    audioElem.play().then(() => {
-      isMusicPlaying.value = true
-    }).catch(err => {
-      console.log('Autoplay waiting for user interaction:', err.message)
-    })
-  } else {
-    // Play Web Audio Begena Synthesizer
-    startBegenaLoop()
-  }
-}
 
 function handleFirstInteraction() {
   if (!hasUserInteracted) {
