@@ -97,9 +97,17 @@
               <div class="contrib-month-name">{{ getMonthAbbr(c.month_covered) }}</div>
             </div>
             <div style="flex:1;">
-              <div style="font-size:0.875rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:0.5rem;">
-                {{ formatMonthLabel(c.month_covered) }}
+              <div style="font-size:0.875rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                <!-- Ethiopian months_covered if available, else Gregorian month -->
+                <template v-if="c.months_covered?.length">
+                  <span v-for="m in (Array.isArray(c.months_covered) ? c.months_covered : JSON.parse(c.months_covered))" :key="m"
+                    class="badge badge-gold" style="font-size:0.7rem;">{{ m }}</span>
+                </template>
+                <template v-else>
+                  {{ formatMonthLabel(c.month_covered) }}
+                </template>
                 <span class="badge badge-info" style="font-size:0.7rem;">{{ c.category || 'Monthly Dues' }}</span>
+                <span :class="['badge', statusBadgeClass(c.status)]" style="font-size:0.68rem;" v-if="c.status">{{ statusLabel(c.status) }}</span>
               </div>
               <div style="font-size:0.78rem;color:var(--text-muted);">
                 {{ t('contributions.datePaid') }}: {{ formatDate(c.date_paid) }}
@@ -207,6 +215,19 @@ function formatDate(d) {
 
 function formatMonthLabel(d) {
   return new Date(d).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+function statusLabel(s) {
+  if (s === 'SUBMITTED') return 'Pending'
+  if (s === 'RECEIVED_BY_MINI_ADMIN') return 'With Mini-Admin'
+  if (s === 'SETTLED_WITH_ADMIN') return 'Settled ✓'
+  return s || ''
+}
+
+function statusBadgeClass(s) {
+  if (s === 'SETTLED_WITH_ADMIN') return 'badge-success'
+  if (s === 'RECEIVED_BY_MINI_ADMIN') return 'badge-info'
+  return 'badge-warning'
 }
 
 async function fetchContributions(page = 1) {

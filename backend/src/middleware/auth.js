@@ -11,7 +11,7 @@ const authenticate = (req, res, next) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { id, role, branch_id, full_name }
+    req.user = decoded; // { id, role, branch_id, full_name, first_child_id?, mini_admin_id? }
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
@@ -19,7 +19,8 @@ const authenticate = (req, res, next) => {
 };
 
 /**
- * Allow only specified roles
+ * Allow only specified roles.
+ * Usage: requireRole('admin', 'superadmin')
  */
 const requireRole = (...roles) => (req, res, next) => {
   if (!req.user || !roles.includes(req.user.role)) {
@@ -29,11 +30,24 @@ const requireRole = (...roles) => (req, res, next) => {
 };
 
 /**
- * Ensure a branch_admin can only access their own branch.
+ * Admin-tier roles (formerly branch_admin).
+ * Convenience alias for requireRole('admin', 'superadmin').
+ */
+const requireAdmin = requireRole('admin', 'superadmin');
+
+/**
+ * Any staff role (admin, mini_admin, first_child, superadmin) but NOT plain member.
+ */
+const requireStaff = requireRole('superadmin', 'admin', 'mini_admin', 'first_child');
+
+/**
+ * Ensure a branch-scoped role can only access their own branch.
  * Looks for branch_id in req.query, req.body, or route params.
+ * superadmin and admin both bypass this check.
  */
 const requireSameBranch = (req, res, next) => {
-  if (req.user.role === 'superadmin') return next(); // superadmin bypasses
+  // superadmin and admin can access any branch
+  if (req.user.role === 'superadmin' || req.user.role === 'admin') return next();
   const requestedBranch =
     req.params.branchId ||
     req.query.branch_id ||
@@ -44,4 +58,4 @@ const requireSameBranch = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireRole, requireSameBranch };
+module.exports = { authenticate, requireRole, requireAdmin, requireStaff, requireSameBranch };

@@ -7,9 +7,16 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('eos_user') || 'null'))
 
   const isAuthenticated = computed(() => !!token.value)
-  const isSuperAdmin = computed(() => user.value?.role === 'superadmin')
-  const isBranchAdmin = computed(() => user.value?.role === 'branch_admin')
-  const isMember = computed(() => user.value?.role === 'member')
+
+  // Role computed helpers
+  const isSuperAdmin  = computed(() => user.value?.role === 'superadmin')
+  const isAdmin       = computed(() => user.value?.role === 'admin')
+  const isMiniAdmin   = computed(() => user.value?.role === 'mini_admin')
+  const isFirstChild  = computed(() => user.value?.role === 'first_child')
+  const isMember      = computed(() => user.value?.role === 'member')
+
+  // Backward-compat alias for any code still referencing isBranchAdmin
+  const isBranchAdmin = isAdmin
 
   async function login(phone, password) {
     const res = await api.post('/api/auth/login', { phone, password })
@@ -40,5 +47,11 @@ export const useAuthStore = defineStore('auth', () => {
     return res.data.user
   }
 
-  return { token, user, isAuthenticated, isSuperAdmin, isBranchAdmin, isMember, login, logout, updateUser, updateProfile }
+  return {
+    token, user,
+    isAuthenticated,
+    isSuperAdmin, isAdmin, isBranchAdmin,
+    isMiniAdmin, isFirstChild, isMember,
+    login, logout, updateUser, updateProfile
+  }
 })

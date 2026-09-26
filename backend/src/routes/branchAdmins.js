@@ -87,18 +87,27 @@ router.get('/all-users', async (req, res) => {
 
 /**
  * GET /api/branch-admins
- * Returns all branch admin accounts with their branch info
+ * Returns all branch staff accounts (admin, mini_admin, first_child) with their branch info
  */
 router.get('/', async (req, res) => {
   try {
+    const { role: roleFilter } = req.query;
+    let whereClause = `u.role IN ('admin', 'mini_admin', 'first_child')`;
+    const params = [];
+    if (roleFilter && ['admin', 'mini_admin', 'first_child'].includes(roleFilter)) {
+      whereClause = `u.role = $1`;
+      params.push(roleFilter);
+    }
     const result = await pool.query(`
-      SELECT u.id, u.phone, u.full_name, u.role, u.created_at,
-             b.id AS branch_id, b.name AS branch_name
+      SELECT u.id, u.phone, u.full_name, u.role, u.created_at, u.mini_admin_id,
+             b.id AS branch_id, b.name AS branch_name,
+             ma.full_name AS mini_admin_name
       FROM users u
       LEFT JOIN branches b ON b.id = u.branch_id
-      WHERE u.role = 'branch_admin'
-      ORDER BY u.created_at DESC
-    `);
+      LEFT JOIN users ma ON ma.id = u.mini_admin_id
+      WHERE ${whereClause}
+      ORDER BY u.role, u.created_at DESC
+    `, params);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -108,13 +117,18 @@ router.get('/', async (req, res) => {
 
 /**
  * POST /api/branch-admins
- * Body: { phone, password, full_name, branch_id }
+ * Body: { phone, password, full_name, branch_id, role?, mini_admin_id? }
+ * Supported roles: admin, mini_admin, first_child
  */
 router.post('/', async (req, res) => {
-  const { phone, password, full_name, branch_id } = req.body;
+  const { phone, password, full_name, branch_id, mini_admin_id } = req.body;
   if (!phone || !password || !full_name || !branch_id) {
     return res.status(400).json({ error: 'phone, password, full_name, and branch_id are required' });
   }
+
+  // Validate allowed roles
+  const ALLOWED_ROLES = ['admin', 'mini_admin', 'first_child'];
+  const userRole = ALLOWED_ROLES.includes(req.body.role) ? req.body.role : 'admin';
 
   try {
     // Check branch exists
@@ -123,12 +137,25 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Branch not found' });
     }
 
+    // For first_child: validate mini_admin_id if provided
+    let resolvedMiniAdminId = null;
+    if (userRole === 'first_child' && mini_admin_id) {
+      const maCheck = await pool.query(
+        `SELECT id FROM users WHERE id = $1 AND role = 'mini_admin'`,
+        [mini_admin_id]
+      );
+      if (maCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'mini_admin_id does not refer to a valid mini_admin' });
+      }
+      resolvedMiniAdminId = parseInt(mini_admin_id);
+    }
+
     const password_hash = await bcrypt.hash(password, 12);
     const result = await pool.query(
-      `INSERT INTO users (phone, password_hash, full_name, role, branch_id)
-       VALUES ($1, $2, $3, 'branch_admin', $4)
-       RETURNING id, phone, full_name, role, branch_id, created_at`,
-      [phone.trim(), password_hash, full_name.trim(), branch_id]
+      `INSERT INTO users (phone, password_hash, full_name, role, branch_id, mini_admin_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, phone, full_name, role, branch_id, mini_admin_id, created_at`,
+      [phone.trim(), password_hash, full_name.trim(), userRole, branch_id, resolvedMiniAdminId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -142,24 +169,24 @@ router.post('/', async (req, res) => {
 
 /**
  * PUT /api/branch-admins/:id
- * Body: { full_name, phone, branch_id, password? }
+ * Body: { full_name, phone, branch_id, password?, mini_admin_id? }
  */
 router.put('/:id', async (req, res) => {
-  const { full_name, phone, branch_id, password } = req.body;
+  const { full_name, phone, branch_id, password, mini_admin_id } = req.body;
   try {
     let updateQuery, params;
     if (password) {
       const password_hash = await bcrypt.hash(password, 12);
-      updateQuery = `UPDATE users SET full_name=$1, phone=$2, branch_id=$3, password_hash=$4
-                     WHERE id=$5 AND role='branch_admin' RETURNING id, phone, full_name, role, branch_id`;
-      params = [full_name, phone, branch_id, password_hash, req.params.id];
+      updateQuery = `UPDATE users SET full_name=$1, phone=$2, branch_id=$3, password_hash=$4, mini_admin_id=$5
+                     WHERE id=$6 AND role IN ('admin','mini_admin','first_child') RETURNING id, phone, full_name, role, branch_id, mini_admin_id`;
+      params = [full_name, phone, branch_id, password_hash, mini_admin_id || null, req.params.id];
     } else {
-      updateQuery = `UPDATE users SET full_name=$1, phone=$2, branch_id=$3
-                     WHERE id=$4 AND role='branch_admin' RETURNING id, phone, full_name, role, branch_id`;
-      params = [full_name, phone, branch_id, req.params.id];
+      updateQuery = `UPDATE users SET full_name=$1, phone=$2, branch_id=$3, mini_admin_id=$4
+                     WHERE id=$5 AND role IN ('admin','mini_admin','first_child') RETURNING id, phone, full_name, role, branch_id, mini_admin_id`;
+      params = [full_name, phone, branch_id, mini_admin_id || null, req.params.id];
     }
     const result = await pool.query(updateQuery, params);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Admin not found' });
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json(result.rows[0]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Phone already in use' });
@@ -174,11 +201,11 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const result = await pool.query(
-      `DELETE FROM users WHERE id=$1 AND role='branch_admin' RETURNING id`,
+      `DELETE FROM users WHERE id=$1 AND role IN ('admin','mini_admin','first_child') RETURNING id`,
       [req.params.id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Admin not found' });
-    res.json({ message: 'Branch admin deleted', id: result.rows[0].id });
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ message: 'User deleted', id: result.rows[0].id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

@@ -10,6 +10,7 @@ const branchesRouter = require('./routes/branches');
 const branchAdminsRouter = require('./routes/branchAdmins');
 const membersRouter = require('./routes/members');
 const contributionsRouter = require('./routes/contributions');
+const handoverRouter = require('./routes/handover');
 const reportsRouter = require('./routes/reports');
 const myContributionsRouter = require('./routes/myContributions');
 const settingsRouter = require('./routes/settings');
@@ -21,7 +22,8 @@ const app = express();
 
 // Middleware — open CORS so frontend & Swagger can call API without restrictions
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // increased limit for base64 image captures
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploaded files (local fallback)
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
@@ -40,6 +42,7 @@ app.use('/api/branches', branchesRouter);
 app.use('/api/branch-admins', branchAdminsRouter);
 app.use('/api/members', membersRouter);
 app.use('/api/contributions', contributionsRouter);
+app.use('/api/contributions', handoverRouter);   // handover: PATCH .../mini-admin/... and .../admin/...
 app.use('/api/reports', reportsRouter);
 app.use('/api/my-contributions', myContributionsRouter);
 app.use('/api/settings', settingsRouter);

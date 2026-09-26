@@ -4,10 +4,10 @@
     <header class="member-header">
       <div class="member-logo">
         <div class="logo-icon" style="background:none;padding:0;">
-          <img src="/assets/images/orthodox_logo.svg" alt="Orthodox Cross" style="width:32px;height:32px;filter:drop-shadow(0 0 4px rgba(212,175,55,0.4));" />
+          <img src="/assets/images/logo.jpg" alt="ጥቁር አንበሳ ግቢ ጉባኤ Logo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid var(--gold);filter:drop-shadow(0 0 4px rgba(212,175,55,0.4));" />
         </div>
         <div>
-          <div class="logo-text">የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ</div>
+          <div class="logo-text">ጥቁር አንበሳ ግቢ ጉባኤ</div>
           <div class="logo-sub">{{ t('myContributions.title') }}</div>
         </div>
       </div>

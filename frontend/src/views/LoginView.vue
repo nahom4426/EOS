@@ -26,12 +26,12 @@
           <!-- Logo & Header inside card -->
           <div class="card-header-emblem">
             <div class="cross-thumb-wrapper">
-              <img src="/assets/images/orthodox_logo.svg" alt="Ethiopian Orthodox Cross" class="cross-thumb-img" style="filter:drop-shadow(0 0 10px rgba(212,175,55,0.6));" />
+              <img src="/assets/images/logo.jpg" alt="ጥቁር አንበሳ ግቢ ጉባኤ Logo" class="cross-thumb-img" style="object-fit:cover;border-radius:50%;filter:drop-shadow(0 0 10px rgba(212,175,55,0.6));" />
               <div class="cross-thumb-glow"></div>
             </div>
-            <h1 class="brand-title">የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ</h1>
+            <h1 class="brand-title">ጥቁር አንበሳ ግቢ ጉባኤ</h1>
             <p class="brand-subtitle">
-              {{ lang === 'en' ? 'Ethiopian Orthodox Tewahedo Church' : 'የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን' }}
+              {{ lang === 'en' ? 'Tikur Anbessa Gibi Gebeye' : 'ጥቁር አንበሳ ግቢ ጉባኤ' }}
             </p>
             <div class="system-chip">
               <span>✝</span>
@@ -142,13 +142,19 @@
               <span>⚡ {{ lang === 'en' ? 'Quick Demo Fill:' : 'ፈጣን መግቢያ:' }}</span>
             </div>
             <div class="demo-chips">
-              <button class="demo-chip" @click="fillDemo('0911000000', 'Admin@1234')">
+              <button class="demo-chip chip-superadmin" @click="fillDemo('0911000000', 'Admin@1234')">
                 👑 Superadmin
               </button>
-              <button class="demo-chip" @click="fillDemo('0922000001', 'BranchAdmin@1')">
+              <button class="demo-chip chip-admin" @click="fillDemo('0922000001', 'BranchAdmin@1')">
                 🏛️ Branch Admin
               </button>
-              <button class="demo-chip" @click="fillDemo('0933000002', 'Member@1')">
+              <button class="demo-chip chip-miniadmin" @click="fillDemo('0922000010', 'MiniAdmin@1')">
+                📦 Mini-Admin
+              </button>
+              <button class="demo-chip chip-firstchild" @click="fillDemo('0933000020', 'FirstChild@1')">
+                👨‍👩‍👧‍👦 First Child
+              </button>
+              <button class="demo-chip chip-member" @click="fillDemo('0933000002', 'Member@1')">
                 👤 Member
               </button>
             </div>
@@ -986,6 +992,62 @@ function getParticleStyle(n) {
   border-color: var(--gold);
   color: var(--gold);
   transform: translateY(-1px);
+}
+
+/* Role-specific chip color variants */
+.chip-superadmin {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.4);
+  color: #D4AF37;
+}
+.chip-superadmin:hover {
+  background: rgba(212, 175, 55, 0.28);
+  border-color: #D4AF37;
+  color: #F0D060;
+}
+
+.chip-admin {
+  background: rgba(139, 26, 26, 0.12);
+  border-color: rgba(139, 26, 26, 0.4);
+  color: #c56b6b;
+}
+.chip-admin:hover {
+  background: rgba(139, 26, 26, 0.28);
+  border-color: #c56b6b;
+  color: #e89090;
+}
+
+.chip-miniadmin {
+  background: rgba(128, 90, 213, 0.12);
+  border-color: rgba(128, 90, 213, 0.4);
+  color: #b794f4;
+}
+.chip-miniadmin:hover {
+  background: rgba(128, 90, 213, 0.28);
+  border-color: #b794f4;
+  color: #d6bcfa;
+}
+
+.chip-firstchild {
+  background: rgba(56, 178, 172, 0.12);
+  border-color: rgba(56, 178, 172, 0.4);
+  color: #81e6d9;
+}
+.chip-firstchild:hover {
+  background: rgba(56, 178, 172, 0.28);
+  border-color: #81e6d9;
+  color: #b2f5ea;
+}
+
+.chip-member {
+  background: rgba(49, 130, 206, 0.12);
+  border-color: rgba(49, 130, 206, 0.4);
+  color: #90cdf4;
+}
+.chip-member:hover {
+  background: rgba(49, 130, 206, 0.28);
+  border-color: #90cdf4;
+  color: #bee3f8;
 }
 
 /* ── Sacred Candle Footer ─────────────────────────────────── */

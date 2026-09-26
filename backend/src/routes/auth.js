@@ -13,7 +13,7 @@ const router = express.Router();
 /**
  * POST /api/auth/login
  * Body: { phone, password }
- * Returns: { token, user: { id, full_name, role, branch_id } }
+ * Returns: { token, user: { id, full_name, role, branch_id, first_child_id, mini_admin_id } }
  */
 router.post('/login', async (req, res) => {
   const { phone, password } = req.body;
@@ -24,7 +24,9 @@ router.post('/login', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, phone, password_hash, full_name, role, branch_id, avatar_url, is_active FROM users WHERE phone = $1',
+      `SELECT id, phone, password_hash, full_name, role, branch_id,
+              avatar_url, is_active, first_child_id, mini_admin_id
+       FROM users WHERE phone = $1`,
       [phone.trim()]
     );
 
@@ -56,8 +58,9 @@ router.post('/login', async (req, res) => {
       branch_id: user.branch_id,
       full_name: user.full_name,
       avatar_url: user.avatar_url,
+      first_child_id: user.first_child_id,
+      mini_admin_id: user.mini_admin_id,
     };
-
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || '7d',
@@ -72,6 +75,8 @@ router.post('/login', async (req, res) => {
         role: user.role,
         branch_id: user.branch_id,
         avatar_url: user.avatar_url,
+        first_child_id: user.first_child_id,
+        mini_admin_id: user.mini_admin_id,
       },
     });
   } catch (err) {
@@ -87,7 +92,9 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.phone, u.full_name, u.role, u.branch_id, u.avatar_url, b.name AS branch_name
+      `SELECT u.id, u.phone, u.full_name, u.role, u.branch_id, u.avatar_url,
+              u.first_child_id, u.mini_admin_id,
+              b.name AS branch_name
        FROM users u LEFT JOIN branches b ON b.id = u.branch_id
        WHERE u.id = $1`,
       [req.user.id]
@@ -120,8 +127,8 @@ router.put('/profile', authenticate, upload.single('avatar'), async (req, res) =
       avatarUrl = await uploadAvatar(req.file);
     }
 
-    // Name can be changed by superadmin and branch_admin (not members)
-    const canChangeName = ['superadmin', 'branch_admin'].includes(req.user.role);
+    // Name can be changed by admins and above (not plain members)
+    const canChangeName = ['superadmin', 'admin', 'mini_admin', 'first_child'].includes(req.user.role);
     const newName = (canChangeName && full_name && full_name.trim()) ? full_name.trim() : currentUser.full_name;
     const newPhone = phone && phone.trim() ? phone.trim() : currentUser.phone;
 

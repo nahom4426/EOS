@@ -54,6 +54,24 @@ async function ensureBucket() {
         ],
       };
       await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+
+      // Set CORS policy on bucket for cross-origin image retrieval (canvas/print)
+      try {
+        if (typeof minioClient.setBucketCors === 'function') {
+          await minioClient.setBucketCors(bucketName, {
+            CORSRules: [
+              {
+                AllowedOrigins: ['*'],
+                AllowedMethods: ['GET', 'HEAD'],
+                AllowedHeaders: ['*'],
+                MaxAgeSeconds: 3600,
+              },
+            ],
+          });
+        }
+      } catch (corsErr) {
+        // Non-fatal if MinIO instance does not support setBucketCors via SDK
+      }
     }
     return true;
   } catch (err) {

@@ -7,7 +7,9 @@
     "start": "node src/server.js",
     "dev": "node src/server.js",
     "db:setup": "node src/db/setup.js",
-    "db:seed": "node src/db/seedRunner.js"
+    "db:seed": "node src/db/seedRunner.js",
+    "db:migrate": "node src/db/migrate.js",
+    "db:migrate-v2": "node src/db/migration_v2.js"
   },
   "keywords": [
     "church",

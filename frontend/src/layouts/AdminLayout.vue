@@ -11,16 +11,20 @@
     <aside class="sidebar" :class="{ open: sidebarOpen }">
       <div class="sidebar-logo">
         <div class="logo-icon" style="background:none;padding:0;">
-          <img src="/assets/images/orthodox_logo.svg" alt="Orthodox Cross" style="width:32px;height:32px;filter:drop-shadow(0 0 4px rgba(212,175,55,0.4));" />
+          <img src="/assets/images/logo.jpg" alt="ጥቁር አንበሳ ግቢ ጉባኤ Logo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid var(--gold);filter:drop-shadow(0 0 4px rgba(212,175,55,0.4));" />
         </div>
         <div>
-          <div class="logo-text">የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ</div>
-          <div class="logo-sub">{{ auth.user?.role === 'superadmin' ? (lang === 'en' ? 'Superadmin System' : 'ሱፐር አስተዳዳሪ') : (lang === 'en' ? 'Branch Admin' : 'የቅርንጫፍ አስተዳዳሪ') }}</div>
+          <div class="logo-text">ጥቁር አንበሳ ግቢ ጉባኤ</div>
+          <div class="logo-sub">
+            {{ auth.user?.role === 'superadmin' ? (lang === 'en' ? 'Superadmin System' : 'ሱፐር አስተዳዳሪ')
+              : auth.user?.role === 'admin' ? (lang === 'en' ? 'Branch Admin' : 'የቅርንጫፍ አስተዳዳሪ')
+              : auth.user?.role === 'mini_admin' ? (lang === 'en' ? 'Mini-Admin' : 'ምናሚ አስተዳዳሪ')
+              : (lang === 'en' ? 'System' : 'ስርዓት') }}
+          </div>
         </div>
       </div>
 
       <nav class="sidebar-nav">
-        <!-- Superadmin nav -->
         <template v-if="auth.isSuperAdmin">
           <div class="nav-section-label">{{ lang === 'en' ? 'Management' : 'አስተዳደር' }}</div>
           <RouterLink to="/superadmin/dashboard" class="nav-link" @click="sidebarOpen = false">
@@ -38,13 +42,16 @@
           <RouterLink to="/superadmin/audit-logs" class="nav-link" @click="sidebarOpen = false">
             <span class="nav-icon">🔍</span> {{ lang === 'en' ? 'Audit Logs' : 'የስርዓት መዝገብ' }}
           </RouterLink>
+          <RouterLink to="/superadmin/settings" class="nav-link" @click="sidebarOpen = false">
+            <span class="nav-icon">⚙️</span> {{ lang === 'en' ? 'Settings' : 'ቅንብሮች' }}
+          </RouterLink>
           <RouterLink to="/superadmin/profile" class="nav-link" @click="sidebarOpen = false">
-            <span class="nav-icon">⚙️</span> {{ lang === 'en' ? 'My Profile' : 'የግል መረጃ' }}
+            <span class="nav-icon">👤</span> {{ lang === 'en' ? 'My Profile' : 'የግል መረጃ' }}
           </RouterLink>
         </template>
 
-        <!-- Branch admin nav -->
-        <template v-if="auth.isBranchAdmin">
+        <!-- Branch admin / admin nav -->
+        <template v-if="auth.isAdmin">
           <div class="nav-section-label">{{ lang === 'en' ? 'Branch' : 'ቅርንጫፍ' }}</div>
           <RouterLink to="/admin/dashboard" class="nav-link" @click="sidebarOpen = false">
             <span class="nav-icon">📊</span> {{ t('nav.dashboard') }}
@@ -55,11 +62,17 @@
           <RouterLink to="/admin/contributions" class="nav-link" @click="sidebarOpen = false">
             <span class="nav-icon">💰</span> {{ t('nav.contributions') }}
           </RouterLink>
+          <RouterLink to="/admin/handovers" class="nav-link" @click="sidebarOpen = false">
+            <span class="nav-icon">🏦</span> {{ lang === 'en' ? 'Handover Settlement' : 'ሒሳብ ሰጠ' }}
+          </RouterLink>
           <RouterLink to="/admin/reports" class="nav-link" @click="sidebarOpen = false">
             <span class="nav-icon">📋</span> {{ t('nav.reports') }}
           </RouterLink>
+          <RouterLink to="/admin/settings" class="nav-link" @click="sidebarOpen = false">
+            <span class="nav-icon">⚙️</span> {{ lang === 'en' ? 'Settings' : 'ቅንብሮች' }}
+          </RouterLink>
           <RouterLink to="/admin/profile" class="nav-link" @click="sidebarOpen = false">
-            <span class="nav-icon">⚙️</span> {{ lang === 'en' ? 'My Profile' : 'የግል መረጃ' }}
+            <span class="nav-icon">👤</span> {{ lang === 'en' ? 'My Profile' : 'የግል መረጃ' }}
           </RouterLink>
         </template>
       </nav>
@@ -116,7 +129,7 @@
             {{ theme.isDark ? '☀️' : '🌙' }}
           </button>
           <!-- User Profile Link -->
-          <RouterLink :to="auth.isSuperAdmin ? '/superadmin/profile' : '/admin/profile'" style="text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
+          <RouterLink :to="auth.isSuperAdmin ? '/superadmin/profile' : auth.isAdmin ? '/admin/profile' : '/login'" style="text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
             <img v-if="getAvatarUrl(auth.user?.avatar_url)" :src="getAvatarUrl(auth.user?.avatar_url)" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--gold);" />
             <div class="badge badge-gold">{{ auth.user?.full_name?.split(' ')[0] }}</div>
           </RouterLink>

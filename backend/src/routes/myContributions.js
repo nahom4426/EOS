@@ -6,13 +6,15 @@ const router = express.Router();
 
 const { calculateMemberScore } = require('../services/scoreCalculator');
 
-router.use(authenticate, requireRole('member'));
+// Accessible by both member and first_child roles
+router.use(authenticate, requireRole('member', 'first_child'));
 
 /**
  * GET /api/my-contributions
- * Member sees only their own contributions
- * ?month=YYYY-MM (optional, defaults to all)
- * ?page=&limit=
+ * - member: their own contributions
+ * - first_child: contributions for all their siblings
+ *
+ * Query: ?month=YYYY-MM  ?page=  ?limit=
  */
 router.get('/', async (req, res) => {
   const { month, page = 1, limit = 20 } = req.query;
@@ -21,9 +23,18 @@ router.get('/', async (req, res) => {
   const offset = (pageNum - 1) * limitNum;
 
   try {
-    let conditions = [`c.member_id = $1`];
-    let params = [req.user.id];
-    let paramCount = 2;
+    let conditions = [];
+    let params = [];
+    let paramCount = 1;
+
+    if (req.user.role === 'member') {
+      conditions.push(`c.member_id = $${paramCount++}`);
+      params.push(req.user.id);
+    } else if (req.user.role === 'first_child') {
+      // Show contributions for all siblings under this first_child
+      conditions.push(`u.first_child_id = $${paramCount++}`);
+      params.push(req.user.id);
+    }
 
     if (month) {
       const [year, mon] = month.split('-');
@@ -32,38 +43,51 @@ router.get('/', async (req, res) => {
       params.push(firstOfMonth);
     }
 
-    const whereClause = `WHERE ${conditions.join(' AND ')}`;
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM contributions c ${whereClause}`,
+      `SELECT COUNT(*) FROM contributions c
+       JOIN users u ON u.id = c.member_id
+       ${whereClause}`,
       params
     );
     const total = parseInt(countResult.rows[0].count);
 
     const result = await pool.query(
-      `SELECT 
-         c.id, c.amount, c.category, c.month_covered, c.date_paid, c.note, c.created_at,
-         b.name AS branch_name, u.full_name AS member_name, u.phone AS member_phone
+      `SELECT
+         c.id, c.amount, c.category, c.month_covered, c.months_covered,
+         c.base_rate_applied, c.date_paid, c.note, c.created_at,
+         c.status, c.batch_id, c.mini_admin_received_at, c.admin_approved_at,
+         b.name AS branch_name,
+         u.full_name AS member_name, u.phone AS member_phone
        FROM contributions c
        JOIN branches b ON b.id = c.branch_id
        JOIN users u ON u.id = c.member_id
        ${whereClause}
-       ORDER BY c.month_covered DESC, c.created_at DESC
+       ORDER BY c.created_at DESC
        LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
       [...params, limitNum, offset]
     );
 
-    // Summary & Member score
+    // For member role: personal score; for first_child: aggregate
+    let scoreDetails;
+    if (req.user.role === 'member') {
+      scoreDetails = await calculateMemberScore(req.user.id);
+    } else {
+      // first_child: placeholder (no personal score)
+      scoreDetails = { score: null, tier: null, tierBadge: null, tierColor: null, streakMonths: 0, monthsPaidCount: 0 };
+    }
+
     const summaryResult = await pool.query(
-      `SELECT 
-         COALESCE(SUM(amount), 0) AS total_contributed,
-         MAX(date_paid) AS last_payment_date
-       FROM contributions
-       WHERE member_id = $1`,
+      req.user.role === 'member'
+        ? `SELECT COALESCE(SUM(amount), 0) AS total_contributed, MAX(date_paid) AS last_payment_date
+           FROM contributions WHERE member_id = $1`
+        : `SELECT COALESCE(SUM(c.amount), 0) AS total_contributed, MAX(c.date_paid) AS last_payment_date
+           FROM contributions c
+           JOIN users u ON u.id = c.member_id
+           WHERE u.first_child_id = $1`,
       [req.user.id]
     );
-
-    const scoreDetails = await calculateMemberScore(req.user.id);
 
     res.json({
       data: result.rows,
@@ -91,4 +115,3 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
-

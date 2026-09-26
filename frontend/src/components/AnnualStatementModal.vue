@@ -21,11 +21,13 @@
         <div class="statement-paper" id="printable-statement">
           <!-- Header -->
           <div class="statement-header">
-            <div class="statement-emblem">✝️</div>
+            <div class="statement-emblem">
+              <img src="/assets/images/logo.jpg" alt="ጥቁር አንበሳ ግቢ ጉባኤ Logo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" />
+            </div>
             <div class="statement-church">
-              <h2>የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን</h2>
-              <h3>Ethiopian Orthodox Tewahedo Church</h3>
-              <p>{{ member?.branch_name || 'Church Branch' }}</p>
+              <h2>ጥቁር አንበሳ ግቢ ጉባኤ</h2>
+              <h3>Tikur Anbessa Gibi Gebeye</h3>
+              <p>{{ member?.branch_name || 'Gibi Gebeye Branch' }}</p>
             </div>
           </div>
 
@@ -54,7 +56,7 @@
             </div>
             <div class="metric-card">
               <span class="m-label">Active Months Paid</span>
-              <span class="m-val">{{ monthsPaidCount }} / 12 Months</span>
+              <span class="m-val">{{ monthsPaidCount }} / 13 Months</span>
             </div>
             <div class="metric-card">
               <span class="m-label">Active Streak</span>
@@ -149,44 +151,53 @@ const currentDate = computed(() => {
 });
 
 const monthlyBreakdown = computed(() => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const ETHIOPIAN_MONTHS = [
+    'Meskerem', 'Tikimt', 'Hidar', 'Tahsas', 'Tir', 'Yekatit',
+    'Megabit', 'Miyazya', 'Ginbot', 'Sene', 'Hamle', 'Nehase', 'Pagume'
+  ];
   const yr = selectedYear.value;
 
-  const result = [];
-  months.forEach((name, idx) => {
-    const monthNum = String(idx + 1).padStart(2, '0');
-    const monthPrefix = `${yr}-${monthNum}`;
+  // Build a set of paid Ethiopian months from contributions
+  const paidMonths = new Map(); // monthName -> { amount, category, datePaid }
 
-    // Find contribution for this month
-    const match = props.contributions.find(c => {
-      const cMonth = typeof c.month_covered === 'string'
-        ? c.month_covered.slice(0, 7)
-        : new Date(c.month_covered).toISOString().slice(0, 7);
-      return cMonth === monthPrefix;
-    });
-
-    if (match) {
-      result.push({
-        monthKey: monthPrefix,
-        monthLabel: `${name} ${yr}`,
-        paid: true,
-        amount: Number(match.amount),
-        category: match.category || 'Monthly Dues',
-        datePaid: match.date_paid
-      });
-    } else {
-      result.push({
-        monthKey: monthPrefix,
-        monthLabel: `${name} ${yr}`,
-        paid: false,
-        amount: 0,
-        category: '—',
-        datePaid: null
-      });
+  for (const c of props.contributions) {
+    // Support months_covered (Ethiopian JSONB array)
+    let mCovered = c.months_covered;
+    if (typeof mCovered === 'string') {
+      try { mCovered = JSON.parse(mCovered); } catch { mCovered = null; }
     }
-  });
 
-  return result;
+    if (Array.isArray(mCovered) && mCovered.length > 0) {
+      const perMonth = parseFloat(c.amount || 0) / mCovered.length;
+      for (const m of mCovered) {
+        if (!paidMonths.has(m)) {
+          paidMonths.set(m, { amount: 0, category: c.category || 'Monthly Dues', datePaid: c.date_paid });
+        }
+        paidMonths.get(m).amount += perMonth;
+      }
+    } else if (c.month_covered) {
+      // Fallback: Gregorian month_covered — try to map to Eth month by index
+      const d = new Date(c.month_covered);
+      const gregMonth = d.getMonth(); // 0-based
+      const ethMonthApprox = ETHIOPIAN_MONTHS[gregMonth]; // rough mapping
+      if (!paidMonths.has(ethMonthApprox)) {
+        paidMonths.set(ethMonthApprox, {
+          amount: parseFloat(c.amount || 0),
+          category: c.category || 'Monthly Dues',
+          datePaid: c.date_paid,
+        });
+      }
+    }
+  }
+
+  return ETHIOPIAN_MONTHS.map((name) => ({
+    monthKey: name,
+    monthLabel: `${name} ${yr}`,
+    paid: paidMonths.has(name),
+    amount: paidMonths.get(name)?.amount || 0,
+    category: paidMonths.get(name)?.category || '—',
+    datePaid: paidMonths.get(name)?.datePaid || null,
+  }));
 });
 
 const annualTotal = computed(() => {
