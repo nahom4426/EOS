@@ -80,7 +80,7 @@
                 <label class="form-label" style="font-weight: 600;">Active Audio Track</label>
                 <select class="form-control" v-model="selectedTrack">
                   <option value="custom_audio">🎵 Default Orthodox Mezmur (የፍቅር እናት የሰላም - Classical MP3)</option>
-                  <option value="begena_synthesizer">🪕 Begena Pentatonic Harp (Web Audio Synthesizer)</option>
+                  <option value="begena_synthesizer">🪕 Ethiopian Orthodox Holy Classical Song for Prayer (MP3)</option>
                   <option value="custom_url">🔗 Custom Audio File / Imported Track</option>
                 </select>
               </div>
