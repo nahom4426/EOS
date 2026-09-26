@@ -1,4 +1,5 @@
 const app = require('./app');
+const pool = require('./db/pool');
 const { runAutoMigrations } = require('./db/autoMigrate');
 
 const PORT = process.env.PORT || 5000;
